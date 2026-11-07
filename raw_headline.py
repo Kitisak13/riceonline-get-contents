@@ -191,4 +191,3 @@ if __name__ == "__main__":
         print(f"Total headlines fetched: {len(items)} for {top_date}")
         for i, it in enumerate(items[:5], 1):
             print(f" {i}. [{it['source']}] {it['headline']} ({it['date']})")
-        print(f" {i}. [{it['source']}] {it['headline']} ({it['date']})")

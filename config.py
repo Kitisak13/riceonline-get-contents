@@ -21,8 +21,8 @@ RICEONLINE_URL = "https://riceonline.com/"
 
 # --- GEMINI MODEL CONFIGURATION ---
 # Primary model for URL Search Grounding and Editorial Cleaning
-GEMINI_PRIMARY_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite")
+GEMINI_PRIMARY_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
 GEMINI_API_DELAY = 4.2  # Seconds between API calls (protects 15 RPM free tier limit)
 GEMINI_TIMEOUT = 45000  # Milliseconds for google-genai HttpOptions (45 seconds)
 

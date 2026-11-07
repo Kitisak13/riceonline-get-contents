@@ -3,11 +3,11 @@ name: Rice Online News Daily Aggregator
 on:
   schedule:
     # Runs Monday to Friday at 00:00 UTC (07:00 AM Bangkok Time)
-    - cron: '0 0 * * 1-5'
+    - cron: "0 0 * * 1-5"
   workflow_dispatch: # Allows manual trigger from GitHub UI anytime
     inputs:
       force:
-        description: 'Force run even if today has already been processed'
+        description: "Force run even if today has already been processed"
         required: false
         default: false
         type: boolean
@@ -23,8 +23,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
@@ -47,7 +47,7 @@ jobs:
         env:
           TZ: "Asia/Bangkok"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: "gemini-3.5-flash"
+          GEMINI_MODEL: "gemini-2.5-flash"
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           GDRIVE_WEBHOOK_URL: ${{ secrets.GDRIVE_WEBHOOK_URL }}
         run: |
@@ -62,4 +62,5 @@ jobs:
         with:
           name: rice-news-daily-report
           path: output/*.docx
+          if-no-files-found: ignore
           retention-days: 14

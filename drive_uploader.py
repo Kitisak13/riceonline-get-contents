@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import requests
 
-from config import GDRIVE_WEBHOOK_URL
+from config import DRIVE_FOLDER_ID, GDRIVE_WEBHOOK_URL
 from utils import logger
 
 
@@ -26,7 +26,7 @@ def upload_report_to_drive(
         Dict with upload result (e.g. {'status': 'success', 'file_url': '...', 'file_id': '...'})
         or None if upload failed or was skipped.
     """
-    url = webhook_url or GDRIVE_WEBHOOK_URL
+    url = GDRIVE_WEBHOOK_URL if webhook_url is None else webhook_url
     if not url:
         logger.warning("⚠️ Skipping Google Drive upload: GDRIVE_WEBHOOK_URL is not configured.")
         return None
@@ -53,6 +53,7 @@ def upload_report_to_drive(
         payload = {
             "filename": filename,
             "content_base64": encoded_content,
+            "folder_id": DRIVE_FOLDER_ID,
             "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         }
 

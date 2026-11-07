@@ -13,7 +13,7 @@ from drive_uploader import upload_report_to_drive
 from raw_headline import fetch_headlines
 from url_resolver import resolve_urls
 from utils import load_json_safe, logger, save_last_processed_date
-from config import RAW_HEADLINES_FILE, RESOLVED_URLS_FILE, SCRAPED_ARTICLES_FILE
+from config import GDRIVE_WEBHOOK_URL, RAW_HEADLINES_FILE, RESOLVED_URLS_FILE, SCRAPED_ARTICLES_FILE
 
 
 def run_pipeline(
@@ -100,10 +100,15 @@ def run_pipeline(
     # STEP 5: Upload Report to Google Drive (if configured)
     # -------------------------------------------------------------
     drive_result = upload_report_to_drive(report_path)
+    if GDRIVE_WEBHOOK_URL and not drive_result:
+        logger.error("❌ Google Drive upload failed. Aborting before saving state so the run can be retried.")
+        sys.exit(1)
 
-    # Save state of successfully processed date
-    if top_date:
+    # Save state of successfully processed date (only on full production runs)
+    if top_date and limit == 0:
         save_last_processed_date(top_date, os.path.basename(report_path))
+    elif top_date and limit > 0:
+        logger.info(f"🧪 Test mode (--test {limit}): State file not updated for '{top_date}'.")
 
     duration = round(time.time() - start_time, 1)
     logger.info("\n" + "=" * 70)
