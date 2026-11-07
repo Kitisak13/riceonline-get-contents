@@ -1,0 +1,41 @@
+# Environment & Secrets
+.env*
+*.env*
+service_account.json
+credentials.json
+*.token
+*.secret
+*.key
+*.pem
+*.crt
+*.pfx
+*.p12
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Output & Logs
+data/
+output/
+logs/
+*.docx
+*.log
+argon_review/
+
+# Checkpoints
+checkpoint_*.json
+result*.json
+raw_headline*.json
+
+# IDE & Local Agent Configurations
+.vscode/
+.idea/
+.agents/
+.geminiignore
+.agentignore
+

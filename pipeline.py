@@ -1,0 +1,122 @@
+# pipeline.py - Unified Orchestrator for Rice Online News
+# ==========================================================
+
+import argparse
+import os
+import sys
+import time
+from datetime import datetime
+
+from article_scraper import scrape_and_clean_articles
+from docx_generator import create_report_document
+from raw_headline import fetch_headlines
+from url_resolver import resolve_urls
+from utils import load_json_safe, logger
+from config import RAW_HEADLINES_FILE, RESOLVED_URLS_FILE, SCRAPED_ARTICLES_FILE
+
+
+def run_pipeline(
+    limit: int = 0,
+    skip_fetch: bool = False,
+    skip_resolve: bool = False,
+    skip_scrape: bool = False
+):
+    """
+    Executes the full automated news pipeline end-to-end.
+    """
+    start_time = time.time()
+    logger.info("=" * 70)
+    logger.info("🚀 RICE ONLINE NEWS - AUTOMATED AGENTIC PIPELINE STARTING")
+    logger.info(f"   Execution Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    if limit > 0:
+        logger.info(f"   Mode: TEST MODE (Limit {limit} headlines)")
+    logger.info("=" * 70)
+
+    # -------------------------------------------------------------
+    # STEP 1: Fetch Headlines from riceonline.com
+    # -------------------------------------------------------------
+    if not skip_fetch:
+        logger.info("\n>>> [STEP 1/4] Scraping Headlines from riceonline.com...")
+        headlines = fetch_headlines()
+        if not headlines:
+            logger.error("❌ Failed to fetch headlines from riceonline.com. Aborting.")
+            sys.exit(1)
+    else:
+        logger.info("\n>>> [STEP 1/4] Skipping headline fetch, loading existing file...")
+        headlines = load_json_safe(RAW_HEADLINES_FILE, [])
+        if not headlines:
+            logger.error(f"❌ No existing headlines found at {RAW_HEADLINES_FILE}. Aborting.")
+            sys.exit(1)
+
+    if limit > 0:
+        headlines = headlines[:limit]
+
+    # -------------------------------------------------------------
+    # STEP 2: Resolve URLs using Gemini Search Grounding (SKILL.md)
+    # -------------------------------------------------------------
+    if not skip_resolve:
+        logger.info("\n>>> [STEP 2/4] Resolving News Article URLs with Gemini Search Grounding...")
+        resolved = resolve_urls(headlines=headlines, limit=limit if limit > 0 else None)
+    else:
+        logger.info("\n>>> [STEP 2/4] Skipping URL resolution, loading existing resolved file...")
+        resolved = load_json_safe(RESOLVED_URLS_FILE, [])
+
+    # -------------------------------------------------------------
+    # STEP 3: Multi-Layer Scraping & AI Content Cleaning
+    # -------------------------------------------------------------
+    if not skip_scrape:
+        logger.info("\n>>> [STEP 3/4] Scraping Articles & Cleaning Content with Gemini AI...")
+        articles = scrape_and_clean_articles(resolved_items=resolved)
+    else:
+        logger.info("\n>>> [STEP 3/4] Skipping scraping, loading existing articles file...")
+        articles = load_json_safe(SCRAPED_ARTICLES_FILE, [])
+
+    # -------------------------------------------------------------
+    # STEP 4: Generate Formatted Word Report (.docx)
+    # -------------------------------------------------------------
+    logger.info("\n>>> [STEP 4/4] Generating Word Document Report...")
+    if not articles:
+        logger.error("❌ No articles available to generate report. Aborting.")
+        sys.exit(1)
+
+    # Check that at least one article has content (prevent silent failure with empty documents)
+    valid_articles = [a for a in articles if a.get("content")]
+    if not valid_articles:
+        logger.error("❌ No article bodies were successfully retrieved or cleaned. Aborting.")
+        sys.exit(1)
+
+    report_path = create_report_document(articles)
+
+    duration = round(time.time() - start_time, 1)
+    logger.info("\n" + "=" * 70)
+    logger.info("🎉 PIPELINE COMPLETED SUCCESSFULLY!")
+    logger.info(f"   ⏱️ Total Duration: {duration}s")
+    logger.info(f"   📄 Generated Report: {report_path}")
+    logger.info("=" * 70)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Rice Online News Aggregator Pipeline")
+    parser.add_argument("--test", type=int, default=0, help="Run in test mode with first N headlines (e.g. --test 3)")
+    parser.add_argument("--step", type=str, choices=["all", "headlines", "resolve", "scrape", "report"], default="all", help="Specific step to run")
+    args = parser.parse_args()
+
+    if args.step == "all":
+        run_pipeline(limit=args.test)
+    elif args.step == "headlines":
+        items = fetch_headlines()
+        if not items:
+            sys.exit(1)
+    elif args.step == "resolve":
+        resolve_urls(limit=args.test if args.test > 0 else None)
+    elif args.step == "scrape":
+        scrape_and_clean_articles()
+    elif args.step == "report":
+        articles = load_json_safe(SCRAPED_ARTICLES_FILE, [])
+        if not articles:
+            sys.exit(1)
+        create_report_document(articles)
+
+
+if __name__ == "__main__":
+    main()
