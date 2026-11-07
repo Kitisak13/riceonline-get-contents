@@ -63,3 +63,7 @@ SCRAPED_ARTICLES_FILE = os.path.join(DATA_DIR, "scraped_articles.json")
 # Persistent cache files (separated from per-run output artifacts)
 URL_CACHE_FILE = os.path.join(DATA_DIR, "url_cache.json")
 SCRAPED_CACHE_FILE = os.path.join(DATA_DIR, "scraped_cache.json")
+
+# --- GOOGLE DRIVE INTEGRATION ---
+GDRIVE_WEBHOOK_URL = os.getenv("GDRIVE_WEBHOOK_URL", "").strip().strip('"').strip("'")
+DRIVE_FOLDER_ID = os.getenv("DRIVE_FOLDER_ID", "1PfHezG561pC5dRnjTK-pSbrWxC59j8Qj").strip()

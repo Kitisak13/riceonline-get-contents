@@ -143,8 +143,16 @@ def create_report_document(
     Returns the absolute path to the generated file.
     """
     if not output_filename:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-        output_filename = f"RiceNews_Report_{timestamp}.docx"
+        # Determine report date from articles, fallback to today's date
+        report_date = None
+        for item in processed_articles:
+            if item.get("date"):
+                report_date = item.get("date").strip()
+                break
+        if not report_date:
+            report_date = datetime.now().strftime("%Y-%m-%d")
+
+        output_filename = f"[{report_date}] Rice News Report.docx"
 
     output_path = os.path.join(OUTPUT_DIR, output_filename)
     logger.info(f"📄 Generating Word document report: {output_path}")

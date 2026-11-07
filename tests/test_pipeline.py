@@ -82,14 +82,21 @@ class TestRiceNewsPipeline(unittest.TestCase):
                 "content": "This is a test article body paragraph."
             }
         ]
-        test_filename = "test_unit_report.docx"
-        output_path = create_report_document(test_articles, output_filename=test_filename)
+        # Test default filename format: [YYYY-MM-DD] Rice News Report.docx
+        output_path = create_report_document(test_articles)
         self.assertTrue(os.path.exists(output_path))
+        self.assertTrue(os.path.basename(output_path).startswith("[2026-11-06] Rice News Report"))
         self.assertGreater(os.path.getsize(output_path), 0)
 
         # Cleanup
         if os.path.exists(output_path):
             os.remove(output_path)
+
+    def test_upload_report_to_drive_skip_without_url(self):
+        """Verify drive uploader skips gracefully when webhook URL is missing."""
+        from drive_uploader import upload_report_to_drive
+        result = upload_report_to_drive("non_existent_file.docx", webhook_url="")
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":

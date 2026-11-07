@@ -43,6 +43,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: "gemini-3.5-flash"
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          GDRIVE_WEBHOOK_URL: ${{ secrets.GDRIVE_WEBHOOK_URL }}
         run: |
           python pipeline.py
 

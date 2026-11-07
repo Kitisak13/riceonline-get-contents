@@ -9,6 +9,7 @@ from datetime import datetime
 
 from article_scraper import scrape_and_clean_articles
 from docx_generator import create_report_document
+from drive_uploader import upload_report_to_drive
 from raw_headline import fetch_headlines
 from url_resolver import resolve_urls
 from utils import load_json_safe, logger
@@ -87,18 +88,25 @@ def run_pipeline(
 
     report_path = create_report_document(articles)
 
+    # -------------------------------------------------------------
+    # STEP 5: Upload Report to Google Drive (if configured)
+    # -------------------------------------------------------------
+    drive_result = upload_report_to_drive(report_path)
+
     duration = round(time.time() - start_time, 1)
     logger.info("\n" + "=" * 70)
     logger.info("🎉 PIPELINE COMPLETED SUCCESSFULLY!")
     logger.info(f"   ⏱️ Total Duration: {duration}s")
-    logger.info(f"   📄 Generated Report: {report_path}")
+    logger.info(f"   📄 Local Report: {report_path}")
+    if drive_result and drive_result.get("file_url"):
+        logger.info(f"   ☁️ Drive URL: {drive_result.get('file_url')}")
     logger.info("=" * 70)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Rice Online News Aggregator Pipeline")
     parser.add_argument("--test", type=int, default=0, help="Run in test mode with first N headlines (e.g. --test 3)")
-    parser.add_argument("--step", type=str, choices=["all", "headlines", "resolve", "scrape", "report"], default="all", help="Specific step to run")
+    parser.add_argument("--step", type=str, choices=["all", "headlines", "resolve", "scrape", "report", "upload"], default="all", help="Specific step to run")
     args = parser.parse_args()
 
     if args.step == "all":
@@ -115,7 +123,17 @@ def main():
         articles = load_json_safe(SCRAPED_ARTICLES_FILE, [])
         if not articles:
             sys.exit(1)
-        create_report_document(articles)
+        path = create_report_document(articles)
+        upload_report_to_drive(path)
+    elif args.step == "upload":
+        import glob
+        from config import OUTPUT_DIR
+        doc_files = sorted(glob.glob(os.path.join(OUTPUT_DIR, "*.docx")), key=os.path.getmtime, reverse=True)
+        if not doc_files:
+            logger.error(f"❌ No .docx files found in {OUTPUT_DIR} to upload.")
+            sys.exit(1)
+        latest_doc = doc_files[0]
+        upload_report_to_drive(latest_doc)
 
 
 if __name__ == "__main__":
