@@ -71,6 +71,17 @@ class TestRiceNewsPipeline(unittest.TestCase):
         # Leading colon must be stripped
         self.assertEqual(results[1]["headline"], "Arkansas Rice Leaders Meet Boozman")
 
+    def test_get_latest_published_date_from_html(self):
+        """Verify extraction of topmost accordion date."""
+        from raw_headline import get_latest_published_date_from_html
+        mock_html = """
+        <div class="accordionButton">Friday, November 06, 2026</div>
+        <div class="accordionContent">...</div>
+        <div class="accordionButton">Thursday, November 05, 2026</div>
+        """
+        date_str = get_latest_published_date_from_html(mock_html)
+        self.assertEqual(date_str, "2026-11-06")
+
     def test_create_report_document(self):
         """Verify document creation with valid typography and hyperlinks."""
         test_articles = [

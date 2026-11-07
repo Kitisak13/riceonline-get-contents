@@ -266,3 +266,22 @@ def load_json_safe(filepath: str, default: Any = None) -> Any:
     except Exception as e:
         logger.warning(f"Failed to read {filepath}: {e}")
         return default
+
+
+# --- PIPELINE STATE & DUPLICATE TRACKING ---
+def get_last_processed_date() -> Optional[str]:
+    """Reads the last successfully processed news date from state file."""
+    from config import PIPELINE_STATE_FILE
+    state = load_json_safe(PIPELINE_STATE_FILE, {})
+    return state.get("last_processed_date")
+
+
+def save_last_processed_date(date_str: str, report_filename: Optional[str] = None):
+    """Saves the last processed news date to state file."""
+    from config import PIPELINE_STATE_FILE
+    state = load_json_safe(PIPELINE_STATE_FILE, {})
+    state["last_processed_date"] = date_str
+    state["last_run_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if report_filename:
+        state["last_report_filename"] = report_filename
+    save_json_atomic(PIPELINE_STATE_FILE, state)

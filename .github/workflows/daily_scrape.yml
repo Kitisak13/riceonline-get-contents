@@ -2,9 +2,15 @@ name: Rice Online News Daily Aggregator
 
 on:
   schedule:
-    # Runs daily at 00:00 UTC (07:00 AM Bangkok Time)
-    - cron: '0 0 * * *'
+    # Runs Monday to Friday at 00:00 UTC (07:00 AM Bangkok Time)
+    - cron: '0 0 * * 1-5'
   workflow_dispatch: # Allows manual trigger from GitHub UI anytime
+    inputs:
+      force:
+        description: 'Force run even if today has already been processed'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   scrape-and-generate:
@@ -45,7 +51,11 @@ jobs:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           GDRIVE_WEBHOOK_URL: ${{ secrets.GDRIVE_WEBHOOK_URL }}
         run: |
-          python pipeline.py
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            python pipeline.py --force
+          else
+            python pipeline.py
+          fi
 
       - name: Upload Report to GitHub Artifacts
         uses: actions/upload-artifact@v4

@@ -6,7 +6,7 @@ import os
 import re
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 from bs4 import BeautifulSoup
@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 from config import RICEONLINE_URL, USER_AGENT, RAW_HEADLINES_FILE
 from utils import (
     calculate_lookback_days,
+    get_last_processed_date,
     logger,
     parse_date_flexible,
     save_json_atomic,
@@ -106,10 +107,26 @@ def extract_headlines_from_html(html_content: str, cutoff_date_str: str) -> List
     return results
 
 
-def fetch_headlines() -> List[Dict[str, str]]:
+def get_latest_published_date_from_html(html_content: str) -> Optional[str]:
+    """Extracts the date string (YYYY-MM-DD) from the topmost accordion button on riceonline.com."""
+    soup = BeautifulSoup(html_content, "html.parser")
+    first_btn = soup.find("div", class_="accordionButton")
+    if not first_btn:
+        return None
+    date_text = clean_headline_text(first_btn.get_text())
+    parsed = parse_date_flexible(date_text)
+    if parsed:
+        return parsed.strftime("%Y-%m-%d")
+    return None
+
+
+def fetch_headlines(force: bool = False) -> Tuple[List[Dict[str, str]], bool, Optional[str]]:
     """
     Fetches riceonline.com homepage, extracts headlines within cutoff window,
-    saves to data/raw_headlines.json, and returns list.
+    saves to data/raw_headlines.json, and returns (headlines, is_already_processed, top_date).
+
+    If the topmost section date on riceonline matches the last successfully processed date
+    (and force=False), marks is_already_processed=True so pipeline can exit early on holidays/no updates.
     """
     logger.info("=" * 60)
     logger.info("🌾 RICE NEWS - Step 1: Fetching Headlines from riceonline.com")
@@ -136,21 +153,42 @@ def fetch_headlines() -> List[Dict[str, str]]:
         logger.info(f"✅ Page fetched successfully: {len(html_text):,} bytes")
     except Exception as e:
         logger.error(f"❌ Failed to fetch riceonline: {e}")
-        return []
+        return [], False, None
+
+    # Duplicate / Holiday Check: Inspect topmost section date
+    latest_published_date = get_latest_published_date_from_html(html_text)
+    last_processed_date = get_last_processed_date()
+
+    logger.info(f"📰 Latest news date on riceonline.com: {latest_published_date or 'Unknown'}")
+    if last_processed_date:
+        logger.info(f"💾 Last processed date on record:     {last_processed_date}")
+
+    if not force and latest_published_date and last_processed_date and latest_published_date == last_processed_date:
+        logger.info("=" * 60)
+        logger.info("🏖️ [NO NEW NEWS / HOLIDAY DETECTED]")
+        logger.info(f"   The latest news on riceonline.com is from '{latest_published_date}',")
+        logger.info("   which was already scraped, processed, and uploaded in a previous run.")
+        logger.info("   Stopping pipeline early to conserve resources. (Use --force to override)")
+        logger.info("=" * 60)
+        return [], True, latest_published_date
 
     headlines = extract_headlines_from_html(html_text, cutoff_date)
     
     if headlines:
         save_json_atomic(RAW_HEADLINES_FILE, headlines)
         logger.info(f"✅ Extracted & Saved {len(headlines)} headlines to {RAW_HEADLINES_FILE}")
-        return headlines
+        return headlines, False, latest_published_date
 
     logger.warning("No headlines extracted")
-    return []
+    return [], False, latest_published_date
 
 
 if __name__ == "__main__":
-    items = fetch_headlines()
-    print(f"Total headlines fetched: {len(items)}")
-    for i, it in enumerate(items[:5], 1):
+    items, is_dup, top_date = fetch_headlines()
+    if is_dup:
+        print(f"No new headlines: {top_date} already processed.")
+    else:
+        print(f"Total headlines fetched: {len(items)} for {top_date}")
+        for i, it in enumerate(items[:5], 1):
+            print(f" {i}. [{it['source']}] {it['headline']} ({it['date']})")
         print(f" {i}. [{it['source']}] {it['headline']} ({it['date']})")

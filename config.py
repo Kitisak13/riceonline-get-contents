@@ -60,9 +60,10 @@ RAW_HEADLINES_FILE = os.path.join(DATA_DIR, "raw_headlines.json")
 RESOLVED_URLS_FILE = os.path.join(DATA_DIR, "resolved_urls.json")
 SCRAPED_ARTICLES_FILE = os.path.join(DATA_DIR, "scraped_articles.json")
 
-# Persistent cache files (separated from per-run output artifacts)
+# Persistent cache and state files (separated from per-run output artifacts)
 URL_CACHE_FILE = os.path.join(DATA_DIR, "url_cache.json")
 SCRAPED_CACHE_FILE = os.path.join(DATA_DIR, "scraped_cache.json")
+PIPELINE_STATE_FILE = os.path.join(DATA_DIR, "pipeline_state.json")
 
 # --- GOOGLE DRIVE INTEGRATION ---
 GDRIVE_WEBHOOK_URL = os.getenv("GDRIVE_WEBHOOK_URL", "").strip().strip('"').strip("'")
