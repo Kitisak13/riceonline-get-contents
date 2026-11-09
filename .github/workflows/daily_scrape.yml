@@ -2,8 +2,8 @@ name: Rice Online News Daily Aggregator
 
 on:
   schedule:
-    # Runs Monday to Friday at 00:00 UTC (07:00 AM Bangkok Time)
-    - cron: "0 0 * * 1-5"
+    # Runs Monday to Friday at 00:15 UTC (07:15 AM Bangkok Time) - offset by 15 mins to avoid 00:00 UTC GitHub runner congestion
+    - cron: "15 0 * * 1-5"
   workflow_dispatch: # Allows manual trigger from GitHub UI anytime
     inputs:
       force:
